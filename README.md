@@ -1,10 +1,15 @@
 # etag-caching
 _Only fetch what's needed, only parse what you don't already have_
 
+[![core Scala version support](https://index.scala-lang.org/guardian/etag-caching/core/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/core)
+[![aws-s3-sdk-v2 Scala version support](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2)
+
 ### Example usage
 
+The main API entry-point is the `ETagCache` class.
+
 This example (taken from [`S3ObjectFetchingTest`](https://github.com/guardian/etag-caching/blob/main/aws-s3/aws-sdk-v2/src/test/scala/com/gu/etagcaching/aws/sdkv2/s3/S3ObjectFetchingTest.scala))
-shows how `ETagCache` might be setup for fetching-and-parsing compressed XML from S3:
+shows an `ETagCache` setup for fetching-and-parsing compressed XML from S3:
 
 ```scala
 import com.gu.etagcaching.ETagCache
