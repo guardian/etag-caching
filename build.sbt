@@ -3,7 +3,7 @@ import ReleaseTransformations.*
 ThisBuild / scalaVersion := "2.13.11"
 ThisBuild / crossScalaVersions := Seq(scalaVersion.value, "3.3.0")
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
-
+ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 
 lazy val baseSettings = Seq(
