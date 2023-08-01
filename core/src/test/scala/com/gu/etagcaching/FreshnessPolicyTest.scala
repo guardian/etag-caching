@@ -13,7 +13,7 @@ import scala.concurrent.Future
 
 class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
 
-  case class ExampleCacheWithPolicy(policy: FreshnessPolicy) {
+  case class DemoCache(policy: FreshnessPolicy) {
     lazy val exampleCache: AsyncLoadingCache[String, Int] = {
       def simulateWork(task: String, key: String, millis: Long): Unit = {
         println(s"$task begin: $key")
@@ -34,20 +34,20 @@ class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
       )
     }
 
-    val reading = policy.on(exampleCache)
+    private val reading = policy.on(exampleCache)
 
     def read() = reading("sample-key").futureValue
 
   }
 
   "AlwaysWaitForRefreshedValue policy" should "always give us the latest, refreshed value" in {
-    val demo = ExampleCacheWithPolicy(AlwaysWaitForRefreshedValue)
+    val demo = DemoCache(AlwaysWaitForRefreshedValue)
     demo.read() shouldBe 0
     demo.read() shouldBe 1
   }
 
   "TolerateOldValueWhileRefreshing policy" should "return instantly if there's an available old value" in {
-    val demo = ExampleCacheWithPolicy(TolerateOldValueWhileRefreshing)
+    val demo = DemoCache(TolerateOldValueWhileRefreshing)
 
     demo.read() shouldBe 0
     failAfter(2.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch

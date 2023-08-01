@@ -1,15 +1,8 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+import ReleaseTransformations.*
 
 ThisBuild / scalaVersion := "2.13.11"
 ThisBuild / crossScalaVersions := Seq(scalaVersion.value, "3.3.0")
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
-
-lazy val `etag-caching-root` = (project in file("."))
-  .aggregate(
-    core,
-    `aws-s3-base`,
-    `aws-s3-sdk-v2`
-  )
 
 lazy val baseSettings = Seq(
   libraryDependencies ++= Seq(
@@ -47,4 +40,29 @@ lazy val `aws-s3-base` =
 
 lazy val `aws-s3-sdk-v2` = awsS3WithSdkVersion(2)
 
-
+lazy val `etag-caching-root` = (project in file("."))
+  .aggregate(
+    core,
+    `aws-s3-base`,
+    `aws-s3-sdk-v2`
+  ).settings(baseSettings).settings(
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {},
+    releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      // For non cross-build projects, use releaseStepCommand("publishSigned")
+      releaseStepCommandAndRemaining("+publishSigned"),
+      releaseStepCommand("sonatypeBundleRelease"),
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
+  )
