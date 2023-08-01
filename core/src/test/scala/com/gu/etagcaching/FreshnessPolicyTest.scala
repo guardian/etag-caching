@@ -11,44 +11,47 @@ import org.scalatest.time.SpanSugar._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
 
-  private def exampleCache(): AsyncLoadingCache[String, Int] = {
-    def simulateWork(task: String, key: String, millis: Long): Unit = {
-      println(s"$task begin: $key")
-      Thread.sleep(millis)
-      println(s"$task end: $key")
+  case class ExampleCacheWithPolicy(policy: FreshnessPolicy) {
+    lazy val exampleCache: AsyncLoadingCache[String, Int] = {
+      def simulateWork(task: String, key: String, millis: Long): Unit = {
+        println(s"$task begin: $key")
+        Thread.sleep(millis)
+        println(s"$task end: $key")
+      }
+
+      Scaffeine().buildAsyncFuture[String, Int](
+        loader = key => Future {
+          simulateWork("load", key, 50)
+          0
+        },
+        reloadLoader = Some { case (key, oldValue) => Future {
+          simulateWork("reload", key, 10)
+          oldValue + 1
+        }
+        }
+      )
     }
 
-    Scaffeine().buildAsyncFuture[String, Int](
-      loader = key => Future {
-        simulateWork("load", key, 50)
-        0
-      },
-      reloadLoader = Some { case (key, oldValue) => Future {
-        simulateWork("reload", key, 10)
-        oldValue + 1
-      }}
-    )
-  }
+    val reading = policy.on(exampleCache)
 
-  def readKeyOn[V](cache: AsyncLoadingCache[String, V], policy: FreshnessPolicy): Unit => V = {
-    _ => policy.on(cache)("sample-key").futureValue
+    def read() = reading("sample-key").futureValue
+
   }
 
   "AlwaysWaitForRefreshedValue policy" should "always give us the latest, refreshed value" in {
-    val read = readKeyOn(exampleCache(), AlwaysWaitForRefreshedValue)
-    read() shouldBe 0
-    read() shouldBe 1
+    val demo = ExampleCacheWithPolicy(AlwaysWaitForRefreshedValue)
+    demo.read() shouldBe 0
+    demo.read() shouldBe 1
   }
 
   "TolerateOldValueWhileRefreshing policy" should "return instantly if there's an available old value" in {
-    val read = readKeyOn(exampleCache(), TolerateOldValueWhileRefreshing)
-    read() shouldBe 0
-    failAfter(2.millis) {
-      read() shouldBe 0
-      () // appease Scala 3 compiler
+    val demo = ExampleCacheWithPolicy(TolerateOldValueWhileRefreshing)
+
+    demo.read() shouldBe 0
+    failAfter(2.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
+      demo.read() shouldBe 0
     }
   }
 }
