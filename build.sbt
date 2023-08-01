@@ -26,7 +26,9 @@ def awsS3WithSdkVersion(version: Int)=
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
         "com.adobe.testing" % "s3mock-testcontainers" % "3.0.1" % Test
-      )
+      ),
+      Compile / doc / sources := // https://github.com/lampepfl/dotty/issues/15288, see also https://github.com/scanamo/scanamo/pull/1643
+        { if (scalaVersion.value.startsWith("3.")) Nil else (Compile / doc / sources).value }
     )
 
 val awsSdkForVersion = Map(
