@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
 import java.util.zip.GZIPInputStream
 import scala.concurrent.duration.DurationInt
-import scala.jdk.FutureConverters.CompletionStageOps
+import scala.jdk.FutureConverters._
 import scala.util.Using
 
 class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfter {
@@ -29,8 +29,8 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
   lazy val s3Client: S3AsyncClient = createS3clientFor(s3Mock) // lazy val because we need the s3Mock to start first
 
   "S3ObjectFetching" should "have an example to show how an S3-backed ETagCache is set up" in {
-    val fruitCache = new ETagCache(
-      S3ObjectFetching(s3Client, Bytes).thenDecoding {
+    val fruitCache = new ETagCache[ObjectId, Fruit](
+      S3ObjectFetching(s3Client, Bytes).thenParsing {
         bytes => Using(new GZIPInputStream(bytes.asInputStream()))(parseFruit).get
       },
       AlwaysWaitForRefreshedValue,

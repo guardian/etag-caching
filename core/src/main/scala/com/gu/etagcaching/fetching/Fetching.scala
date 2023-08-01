@@ -9,5 +9,5 @@ trait Fetching[K, Response] {
 
   def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]]
 
-  def thenDecoding[V](computing: Response => V): Loading[K, V] = Loading.by(this)(computing)
+  def thenParsing[V](parse: Response => V): Loading[K, V] = Loading.by(this)(parse)
 }
