@@ -2,6 +2,7 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.11"
 ThisBuild / crossScalaVersions := Seq(scalaVersion.value, "3.3.0")
+ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
 
 lazy val `etag-caching-root` = (project in file("."))
   .aggregate(
