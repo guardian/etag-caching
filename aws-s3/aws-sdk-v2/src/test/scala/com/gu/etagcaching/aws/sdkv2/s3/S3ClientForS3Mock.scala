@@ -1,4 +1,4 @@
-package com.gu.aws.sdkv2.s3
+package com.gu.etagcaching.aws.sdkv2.s3
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}

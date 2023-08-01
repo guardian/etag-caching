@@ -1,4 +1,4 @@
-package com.gu.aws.sdkv2.s3.response
+package com.gu.etagcaching.aws.sdkv2.s3.response
 
 import software.amazon.awssdk.core.async.AsyncResponseTransformer
 import software.amazon.awssdk.core.{ResponseBytes, ResponseInputStream}

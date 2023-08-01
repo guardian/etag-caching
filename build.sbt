@@ -4,6 +4,8 @@ ThisBuild / scalaVersion := "2.13.11"
 ThisBuild / crossScalaVersions := Seq(scalaVersion.value, "3.3.0")
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
 
+
+
 lazy val baseSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.16" % Test

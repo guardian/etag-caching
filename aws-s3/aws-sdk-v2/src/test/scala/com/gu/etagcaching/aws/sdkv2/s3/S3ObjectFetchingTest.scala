@@ -1,12 +1,12 @@
-package com.gu.aws.sdkv2.s3
+package com.gu.etagcaching.aws.sdkv2.s3
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer
-import com.gu.aws.s3.ObjectId
-import com.gu.aws.sdkv2.s3.ExampleParser.parseFruit
-import com.gu.aws.sdkv2.s3.S3ClientForS3Mock.createS3clientFor
-import com.gu.aws.sdkv2.s3.response.Transformer.Bytes
+import ExampleParser.parseFruit
+import S3ClientForS3Mock.createS3clientFor
+import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
 import com.gu.etagcaching.ETagCache
 import com.gu.etagcaching.FreshnessPolicy.AlwaysWaitForRefreshedValue
+import com.gu.etagcaching.aws.s3.ObjectId
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec

@@ -1,7 +1,7 @@
-package com.gu.aws.sdkv2.s3
+package com.gu.etagcaching.aws.sdkv2.s3
 
-import com.gu.aws.s3.ObjectId
-import com.gu.aws.sdkv2.s3.response.Transformer
+import com.gu.etagcaching.aws.s3.ObjectId
+import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer
 import com.gu.etagcaching.fetching.{ETaggedData, Fetching}
 import software.amazon.awssdk.core.internal.util.ThrowableUtils
 import software.amazon.awssdk.services.s3.S3AsyncClient

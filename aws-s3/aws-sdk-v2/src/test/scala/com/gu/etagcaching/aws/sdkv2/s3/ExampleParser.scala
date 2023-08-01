@@ -1,4 +1,4 @@
-package com.gu.aws.sdkv2.s3
+package com.gu.etagcaching.aws.sdkv2.s3
 
 import org.w3c.dom.Document
 
