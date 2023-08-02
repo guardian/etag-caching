@@ -4,6 +4,18 @@ _Only fetch what's needed, only parse what you don't already have_
 [![core Scala version support](https://index.scala-lang.org/guardian/etag-caching/core/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/core)
 [![aws-s3-sdk-v2 Scala version support](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2)
 
+Many services (eg Amazon S3) include the [`ETag`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag)s HTTP response header
+in their replies - the ETag is a service-generated hash of the content requested.
+If the client retains the ETag, they can send it in a `If-None-Match` HTTP request header in subsequent requests - if the service knows
+the content still has the same ETag, the content hasn't changed, and the service will respond with a blank 
+HTTP [`304 Not Modified`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304) status code - no body will be returned, as the
+service knows you already have the content - this saves network bandwidth, and as there's no new content-parsing required for the client,
+the client will have lower CPU requirements as well!
+
+To make use of this as a client, you need an `ETagCache` - one where the latest ETags are stored. Although the cache could simply be storing the raw
+content sent by the service, for an in-memory cache it's usually optimal to store a _parsed_ representation of the data - to save having
+to parse the data multiple times. Consequently, `ETagCache` has a `Loader` that holds the two concerns of *fetching* & *parsing*.
+
 ### Example usage
 
 The main API entry-point is the `ETagCache` class.
