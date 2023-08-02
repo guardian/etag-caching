@@ -30,7 +30,10 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
 
   "S3ObjectFetching" should "have an example to show how an S3-backed ETagCache is set up" in {
     val fruitCache = new ETagCache[ObjectId, Fruit](
-      S3ObjectFetching(s3Client, Bytes).thenParsing {
+      S3ObjectFetching(s3Client, Bytes).timing(
+        successWith = d => println(s"Success: $d"),
+        notModifiedWith = d => println(s"Not modified: $d")
+      ).thenParsing {
         bytes => Using(new GZIPInputStream(bytes.asInputStream()))(parseFruit).get
       },
       AlwaysWaitForRefreshedValue,
@@ -38,6 +41,7 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
     )
 
     uploadFile("banana.xml.gz")
+    fruitCache.get(ExampleS3Object).futureValue.colour shouldBe "yellow"
     fruitCache.get(ExampleS3Object).futureValue.colour shouldBe "yellow"
 
     uploadFile("kiwi.xml.gz")
