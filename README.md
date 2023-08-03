@@ -6,7 +6,7 @@ _Only fetch what's needed, only parse what you don't already have_
 
 Many services (eg Amazon S3) include the [`ETag`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag)s HTTP response header
 in their replies - the ETag is a service-generated hash of the content requested.
-If the client retains the ETag, they can send it in a `If-None-Match` HTTP request header in subsequent requests - if the service knows
+If the client retains the ETag, they can send it in a [`If-None-Match`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match) HTTP request header in subsequent requests - if the service knows
 the content still has the same ETag, the content hasn't changed, and the service will respond with a blank 
 HTTP [`304 Not Modified`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304) status code - no body will be returned, as the
 service knows you already have the content - this saves network bandwidth, and as there's no new content-parsing required for the client,
