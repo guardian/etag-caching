@@ -43,14 +43,14 @@ class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
   "AlwaysWaitForRefreshedValue policy" should "always give us the latest, refreshed value, even tho' it takes some time to make the ETag-checking fetch" in {
     val demo = DemoCache(AlwaysWaitForRefreshedValue)
     demo.read() shouldBe 0
-    demo.read() shouldBe 1
+    demo.read() shouldBe 2
   }
 
   "TolerateOldValueWhileRefreshing policy" should "return instantly if there's an available old value" in {
     val demo = DemoCache(TolerateOldValueWhileRefreshing)
 
     demo.read() shouldBe 0
-    failAfter(2.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
+    failAfter(1.nanoseconds) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
       demo.read() shouldBe 0
     }
   }
