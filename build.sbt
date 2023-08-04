@@ -1,7 +1,11 @@
 import ReleaseTransformations.*
 
 ThisBuild / scalaVersion := "2.13.11"
-ThisBuild / crossScalaVersions := Seq(scalaVersion.value, "3.3.0")
+ThisBuild / crossScalaVersions := Seq(
+  scalaVersion.value,
+  "3.3.0",
+  "2.12.18" // Motivated by facia/FAPI clients still on Scala 2.12
+)
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
 ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
