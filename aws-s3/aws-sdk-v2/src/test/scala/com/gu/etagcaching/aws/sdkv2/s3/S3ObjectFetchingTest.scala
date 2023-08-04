@@ -1,24 +1,23 @@
 package com.gu.etagcaching.aws.sdkv2.s3
 
 import com.adobe.testing.s3mock.testcontainers.S3MockContainer
-import ExampleParser.parseFruit
-import S3ClientForS3Mock.createS3clientFor
-import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
 import com.gu.etagcaching.ETagCache
 import com.gu.etagcaching.FreshnessPolicy.AlwaysWaitForRefreshedValue
 import com.gu.etagcaching.aws.s3.ObjectId
+import com.gu.etagcaching.aws.sdkv2.s3.ExampleParser.parseFruit
+import com.gu.etagcaching.aws.sdkv2.s3.S3ClientForS3Mock.createS3clientFor
+import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import scala.compat.java8.FutureConverters._
 
 import java.io.File
 import java.util.zip.GZIPInputStream
 import scala.concurrent.duration.DurationInt
-import scala.jdk.FutureConverters._
-import scala.util.Using
 
 class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfter {
   val ExampleS3Object: ObjectId = ObjectId("test-bucket", "path")
@@ -34,7 +33,9 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
         successWith = d => println(s"Success: $d"),
         notModifiedWith = d => println(s"Not modified: $d")
       ).thenParsing {
-        bytes => Using(new GZIPInputStream(bytes.asInputStream()))(parseFruit).get
+        bytes =>
+          // Scala 2.13+ : Using(new GZIPInputStream(bytes.asInputStream()))(parseFruit).get
+          parseFruit(new GZIPInputStream(bytes.asInputStream())) // Scala 2.12
       },
       AlwaysWaitForRefreshedValue,
       _.maximumSize(500).expireAfterAccess(1.hour)
@@ -55,7 +56,7 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
     val s3response = s3Client.putObject(
       PutObjectRequest.builder().bucket(ExampleS3Object.bucket).key(ExampleS3Object.key).build(),
       path
-    ).asScala.futureValue
+    ).toScala.futureValue
 
     assert(s3response.sdkHttpResponse.isSuccessful)
   }
