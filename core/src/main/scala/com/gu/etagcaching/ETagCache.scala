@@ -3,8 +3,7 @@ package com.gu.etagcaching
 import com.github.blemale.scaffeine.Scaffeine
 import com.gu.etagcaching.fetching.ETaggedData
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * ETagCache can be used when accessing services that support `ETag`s and conditional-fetching, like S3.
@@ -33,7 +32,7 @@ class ETagCache[K, V](
   loading: Loading[K, V],
   freshnessPolicy: FreshnessPolicy,
   configureCache: Scaffeine[Any, Any] => Scaffeine[Any, Any]
-) {
+)(implicit ec: ExecutionContext) {
 
   private val cache = configureCache(Scaffeine()).buildAsyncFuture[K, ETaggedData[V]](
     loader = loading.fetchAndParse,

@@ -13,10 +13,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import scala.compat.java8.FutureConverters._
 
 import java.io.File
 import java.util.zip.GZIPInputStream
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfter {

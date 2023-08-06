@@ -6,7 +6,7 @@ import com.gu.etagcaching.fetching.Fetching._
 
 import java.time.{Duration, Instant}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait Fetching[K, Response] {
   def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]]
@@ -30,6 +30,10 @@ trait Fetching[K, Response] {
         }
       }
     }
+
+  def keyOn[K2](f: K2 => K): Fetching[K2, Response] = KeyAdapter(this)(f)
+
+  def mapResponse[Response2](f: Response => Response2): Fetching[K, Response2] = ResponseMapper(this)(f)
 
   def thenParsing[V](parse: Response => V): Loading[K, V] = Loading.by(this)(parse)
 }
@@ -60,4 +64,21 @@ object Fetching {
       time(underlying.fetchOnlyIfETagChanged(key, eTag))(_.map(_ => FullFetch).getOrElse(NotModified))
   }
 
+  private case class KeyAdapter[K, UnderlyingK, Response](underlying: Fetching[UnderlyingK, Response])(f: K => UnderlyingK)
+    extends Fetching[K, Response] {
+    override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
+      underlying.fetch(f(key))
+
+    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
+      underlying.fetchOnlyIfETagChanged(f(key), eTag)
+  }
+
+  private case class ResponseMapper[K, UnderlyingResponse, Response](underlying: Fetching[K, UnderlyingResponse])(f: UnderlyingResponse => Response)
+    extends Fetching[K, Response] {
+    override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
+      underlying.fetch(key).map(_.map(f))
+
+    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
+      underlying.fetchOnlyIfETagChanged(key, eTag).map(_.map(_.map(f)))
+  }
 }

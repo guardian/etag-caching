@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class S3ObjectFetching[Response](s3Client: S3AsyncClient, transformer: Transformer[Response])
   extends Fetching[ObjectId, Response] {
-  def wrapWithETag(resp: Response): ETaggedData[Response] =
+  private def wrapWithETag(resp: Response): ETaggedData[Response] =
     ETaggedData(transformer.rawResponseObjectOf(resp).eTag(), resp)
 
   private def performFetch(
