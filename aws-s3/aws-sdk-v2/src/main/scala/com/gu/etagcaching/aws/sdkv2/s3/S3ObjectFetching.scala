@@ -1,5 +1,6 @@
 package com.gu.etagcaching.aws.sdkv2.s3
 
+import com.gu.etagcaching.Endo
 import com.gu.etagcaching.aws.s3.ObjectId
 import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer
 import com.gu.etagcaching.fetching.{ETaggedData, Fetching}
@@ -18,7 +19,7 @@ case class S3ObjectFetching[Response](s3Client: S3AsyncClient, transformer: Tran
 
   private def performFetch(
     resourceId: ObjectId,
-    reqModifier: GetObjectRequest.Builder => GetObjectRequest.Builder = identity,
+    reqModifier: Endo[GetObjectRequest.Builder] = identity,
   )(implicit ec: ExecutionContext): Future[ETaggedData[Response]] = {
     val requestBuilder = GetObjectRequest.builder().bucket(resourceId.bucket).key(resourceId.key)
     val request = reqModifier(requestBuilder).build()

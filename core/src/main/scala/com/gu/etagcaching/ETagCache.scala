@@ -31,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ETagCache[K, V](
   loading: Loading[K, V],
   freshnessPolicy: FreshnessPolicy,
-  configureCache: Scaffeine[Any, Any] => Scaffeine[Any, Any]
+  configureCache: ConfigCache
 )(implicit ec: ExecutionContext) {
 
   private val cache = configureCache(Scaffeine()).buildAsyncFuture[K, ETaggedData[V]](
