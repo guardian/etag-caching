@@ -16,9 +16,14 @@ To make use of this as a client, you need an `ETagCache` - one where the latest 
 content sent by the service, for an in-memory cache it's usually optimal to store a _parsed_ representation of the data - to save having
 to parse the data multiple times. Consequently, `ETagCache` has a `Loader` that holds the two concerns of *fetching* & *parsing*.
 
-### Example usage
+### Usage
 
-The main API entry-point is the `ETagCache` class.
+The main API entry point is the `com.gu.etagcaching.ETagCache` class.
+
+#### Examples
+
+* https://github.com/guardian/frontend/pull/26338
+* https://github.com/guardian/facia-scala-client/pull/287
 
 This example (taken from [`S3ObjectFetchingTest`](https://github.com/guardian/etag-caching/blob/main/aws-s3/aws-sdk-v2/src/test/scala/com/gu/etagcaching/aws/sdkv2/s3/S3ObjectFetchingTest.scala))
 shows an `ETagCache` setup for fetching-and-parsing compressed XML from S3:
