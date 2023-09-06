@@ -1,6 +1,6 @@
 package com.gu.etagcaching
 
-import com.github.blemale.scaffeine.Scaffeine
+import com.github.blemale.scaffeine.{AsyncLoadingCache, Scaffeine}
 import com.gu.etagcaching.fetching.ETaggedData
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,19 +28,20 @@ import scala.concurrent.{ExecutionContext, Future}
  * @tparam K The 'key' or resource identifier type - for instance, a URL or S3 Object Id.
  * @tparam V The 'value' for the key - a parsed representation of whatever was in the resource data.
  */
-class ETagCache[K, V](
-  loading: Loading[K, V],
+class ETagCache[K, V, X](
+  loading: Loading[K, V, X],
   freshnessPolicy: FreshnessPolicy,
   configureCache: ConfigCache
 )(implicit ec: ExecutionContext) {
 
-  private val cache = configureCache(Scaffeine()).buildAsyncFuture[K, ETaggedData[V]](
-    loader = loading.fetchAndParse,
-    reloadLoader = Some(loading.fetchThenParseIfNecessary)
-  )
+  private val cache: AsyncLoadingCache[K, Either[X, ETaggedData[V]]] =
+    configureCache(Scaffeine()).buildAsyncFuture[K, Either[X, ETaggedData[V]]](
+      loader = loading.fetchAndParse,
+      reloadLoader = Some(loading.fetchThenParseIfNecessary)
+    )
 
   private val read = freshnessPolicy.on(cache)
 
-  def get(key: K): Future[V] = read(key).map(_.result)
+  def get(key: K): Future[Option[V]] = read(key).map(_.result)
 
 }

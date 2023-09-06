@@ -16,23 +16,23 @@ import scala.concurrent.{ExecutionContext, Future}
  * @tparam K The 'key' or resource identifier type - for instance, a URL or S3 Object Id.
  * @tparam V The 'value' for the key - a parsed representation of whatever was in the resource data.
  */
-trait Loading[K, V] {
-  def fetchAndParse(k: K)(implicit ec: ExecutionContext): Future[ETaggedData[V]]
+trait Loading[K, V, X] {
+  def fetchAndParse(k: K)(implicit ec: ExecutionContext): Future[Either[X, ETaggedData[V]]]
 
   /**
    * When we have ''old'' `ETaggedData`, we can send the `ETag` with the Fetch request, and the server will return
    * a blank HTTP 304 `Not Modified` response if the content hasn't changed - which means we DO NOT need to parse
    * any new data, and can just reuse our old data, saving us CPU time and network bandwidth.
    */
-  def fetchThenParseIfNecessary(k: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[ETaggedData[V]]
+  def fetchThenParseIfNecessary(k: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[Either[X, ETaggedData[V]]]
 }
 
 object Loading {
-  def by[K, Response, V](fetching: Fetching[K, Response])(parse: Response => V): Loading[K, V] = new Loading[K, V] {
-    def fetchAndParse(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[V]] =
+  def by[K, Response, V, X](fetching: Fetching[K, Response, X])(parse: Response => V): Loading[K, V, X] = new Loading[K, V, X] {
+    def fetchAndParse(key: K)(implicit ec: ExecutionContext): Future[Either[X, ETaggedData[V]]] =
       fetching.fetch(key).map(_.map(parse))
 
-    def fetchThenParseIfNecessary(key: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[ETaggedData[V]] =
+    def fetchThenParseIfNecessary(key: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[Either[X, ETaggedData[V]]] =
       fetching.fetchOnlyIfETagChanged(key, oldV.eTag).map {
         case None => oldV // we got HTTP 304 'NOT MODIFIED': there's no new data - old data is still valid
         case Some(freshResponse) => freshResponse.map(parse)
