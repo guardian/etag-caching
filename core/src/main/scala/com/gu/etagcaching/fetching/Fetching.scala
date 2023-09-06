@@ -1,11 +1,11 @@
 package com.gu.etagcaching.fetching
 
-import com.gu.etagcaching.Loading
+import com.gu.etagcaching.{Endo, Loading}
 import com.gu.etagcaching.fetching.Fetching.DurationRecorder.Result
 import com.gu.etagcaching.fetching.Fetching._
 
 import java.time.{Duration, Instant}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{CancellationException, ExecutionContext, Future, TimeoutException}
 import scala.util.{Failure, Success, Try}
 
 trait Fetching[K, Response] {
@@ -33,7 +33,15 @@ trait Fetching[K, Response] {
 
   def keyOn[K2](f: K2 => K): Fetching[K2, Response] = KeyAdapter(this)(f)
 
-  def mapResponse[Response2](f: Response => Response2): Fetching[K, Response2] = ResponseMapper(this)(f)
+  def mapResponse[Response2](f: Response => Response2): Fetching[K, Response2] =
+    ResponseTransform(this)(successTransform = f)
+
+  def suppressExceptionLoggingIf(p: Throwable => Boolean): Fetching[K, Response] =
+    ResponseTransform(this)(identity, failureTransform = { throwable =>
+      if (p(throwable)) // this is admittedly a pretty horrible hack
+        new CancellationException(s"Suppressing Caffeine cache exception logging for '$throwable'")
+      else throwable // Caffeine will log this exception: https://github.com/ben-manes/caffeine/issues/597
+    })
 
   def thenParsing[V](parse: Response => V): Loading[K, V] = Loading.by(this)(parse)
 }
@@ -73,12 +81,14 @@ object Fetching {
       underlying.fetchOnlyIfETagChanged(f(key), eTag)
   }
 
-  private case class ResponseMapper[K, UnderlyingResponse, Response](underlying: Fetching[K, UnderlyingResponse])(f: UnderlyingResponse => Response)
-    extends Fetching[K, Response] {
+  private case class ResponseTransform[K, UnderlyingResponse, Response](underlying: Fetching[K, UnderlyingResponse])(
+    successTransform: UnderlyingResponse => Response,
+    failureTransform: Endo[Throwable] = identity
+  ) extends Fetching[K, Response] {
     override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
-      underlying.fetch(key).map(_.map(f))
+      underlying.fetch(key).transform(_.map(successTransform), failureTransform)
 
     override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
-      underlying.fetchOnlyIfETagChanged(key, eTag).map(_.map(_.map(f)))
+      underlying.fetchOnlyIfETagChanged(key, eTag).transform(_.map(_.map(successTransform)), failureTransform)
   }
 }
