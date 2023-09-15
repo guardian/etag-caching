@@ -49,3 +49,15 @@ val fruitCache = new ETagCache[ObjectId, Fruit](
 
 fruitCache.get(exampleS3id) // Future[Fruit]
 ```
+
+### Loading = Fetching + Parsing
+
+```mermaid
+flowchart LR
+subgraph "Loading[K,V]"
+direction LR
+fetching("fetching: Fetching[K, Response]")
+parsing("parsing: Response => V")
+fetching --"response"--> parsing
+end
+```
