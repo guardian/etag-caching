@@ -3,6 +3,7 @@ _Only fetch what's needed, only parse what you don't already have_
 
 [![core Scala version support](https://index.scala-lang.org/guardian/etag-caching/core/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/core)
 [![aws-s3-sdk-v2 Scala version support](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/guardian/etag-caching/aws-s3-sdk-v2)
+[![CI](https://github.com/guardian/etag-caching/actions/workflows/ci.yml/badge.svg)](https://github.com/guardian/etag-caching/actions/workflows/ci.yml)
 
 Many services (eg Amazon S3) include the [`ETag`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag)s HTTP response header
 in their replies - the ETag is a service-generated hash of the content requested.
