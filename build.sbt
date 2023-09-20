@@ -54,9 +54,7 @@ lazy val `etag-caching-root` = (project in file("."))
     `aws-s3-base`,
     `aws-s3-sdk-v2`
   ).settings(baseSettings).settings(
-    publishArtifact := false,
-    publish := {},
-    publishLocal := {},
+    publish / skip := true,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
