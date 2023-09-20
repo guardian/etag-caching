@@ -1,6 +1,6 @@
 import ReleaseTransformations.*
 
-ThisBuild / scalaVersion := "2.13.11"
+ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / crossScalaVersions := Seq(
   scalaVersion.value,
   "3.3.0",
@@ -12,7 +12,7 @@ ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/
 
 lazy val baseSettings = Seq(
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.16" % Test
+    "org.scalatest" %% "scalatest" % "3.2.17" % Test
   ),
   Test / testOptions +=
     Tests.Argument(TestFrameworks.ScalaTest, "-u", s"test-results/scala-${scalaVersion.value}", "-o")
