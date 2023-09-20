@@ -3,7 +3,7 @@ import ReleaseTransformations.*
 ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / crossScalaVersions := Seq(
   scalaVersion.value,
-  "3.3.0",
+  "3.3.1",
   "2.12.18" // Motivated by facia/FAPI clients still on Scala 2.12
 )
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
@@ -32,9 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
         "com.adobe.testing" % "s3mock-testcontainers" % "3.1.0" % Test
-      ),
-      Compile / doc / sources := // https://github.com/lampepfl/dotty/issues/15288, see also https://github.com/scanamo/scanamo/pull/1643
-        { if (scalaVersion.value.startsWith("3.")) Nil else (Compile / doc / sources).value }
+      )
     )
 
 val awsSdkForVersion = Map(
