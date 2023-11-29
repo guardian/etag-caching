@@ -1,0 +1,25 @@
+name: Release
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+          gpg-private-key: ${{ secrets.PGP_SECRET }}
+          gpg-passphrase: PGP_PASSPHRASE
+      - run: git config user.email "release-bot@theguardian.com"
+      - run: git config user.name "the Guardian release bot"
+      - name: Publish the release
+        run: sbt "release with-defaults"
