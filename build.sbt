@@ -1,5 +1,6 @@
 import ReleaseTransformations.*
 import sbtversionpolicy.SbtVersionPolicyPlugin.aggregatedAssessedCompatibilityWithLatestRelease
+import sbtversionpolicy.withsbtrelease.ReleaseVersion
 
 ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / crossScalaVersions := Seq(
@@ -55,31 +56,7 @@ lazy val `etag-caching-root` = (project in file("."))
   ).settings(baseSettings).settings(
     publish / skip := true,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
-    releaseVersion := {
-      import sbtrelease.{ Version, versionFormatError }
-
-      val log = streams.value.log
-      val compatibility = aggregatedAssessedCompatibilityWithLatestRelease.value
-
-      log.info(s"Overall compatibility is ${compatibility}")
-      val maybeBump =
-        compatibility match {
-          case Compatibility.None => Some(Version.Bump.Major)
-          case Compatibility.BinaryCompatible => Some(Version.Bump.Minor)
-          case Compatibility.BinaryAndSourceCompatible => None // No need to bump the patch version, because it has already been bumped when sbt-release set the next release version
-        }
-      log.debug(s"releaseVersion function will apply ${maybeBump}")
-      ({ (currentVersion: String) =>
-        val versionWithoutQualifier =
-          Version(currentVersion)
-            .getOrElse(versionFormatError(currentVersion))
-            .withoutQualifier
-        (maybeBump match {
-          case Some(bump) => versionWithoutQualifier.bump(bump)
-          case None => versionWithoutQualifier
-        }).string
-      })
-    },
+    releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibility.value,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
