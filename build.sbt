@@ -54,6 +54,57 @@ lazy val `etag-caching-root` = (project in file("."))
   ).settings(baseSettings).settings(
     publish / skip := true,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
+    releaseVersion := Def.taskDyn {
+      import sbtrelease.{ Version, versionFormatError }
+
+      val log = streams.value.log
+      val subprojectRefs = thisProject.value.aggregate
+
+      Def.taskDyn {
+        val compatibilityTask =
+          subprojectRefs.foldLeft(Def.task[Compatibility] {
+            Compatibility.BinaryAndSourceCompatible
+          }) { (previousCompatibilityTask, subproject) =>
+            Def.task {
+              val previousCompatibility = previousCompatibilityTask.value
+              val subprojectCompatibilities = (subproject / versionPolicyAssessCompatibility).value
+              subprojectCompatibilities.headOption match {
+                case Some((_, compatibility)) =>
+                  log.debug(s"Compatibility of project ${subproject.project} is ${compatibility}")
+                  (previousCompatibility, compatibility) match {
+                    case (Compatibility.None, _) => Compatibility.None
+                    case (_, Compatibility.None) => Compatibility.None
+                    case (Compatibility.BinaryCompatible, _) => Compatibility.BinaryCompatible
+                    case (_, Compatibility.BinaryCompatible) => Compatibility.BinaryCompatible
+                    case _ => Compatibility.BinaryAndSourceCompatible
+                  }
+                case None => previousCompatibility
+              }
+            }
+          }
+        Def.task {
+          val compatibility = compatibilityTask.value
+          log.info(s"Overall compatibility is ${compatibility}")
+          val maybeBump =
+            compatibility match {
+              case Compatibility.None => Some(Version.Bump.Major)
+              case Compatibility.BinaryCompatible => Some(Version.Bump.Minor)
+              case Compatibility.BinaryAndSourceCompatible => None // No need to bump the patch version, because it has already been bumped when sbt-release set the next release version
+            }
+          log.debug(s"releaseVersion function will apply ${maybeBump}")
+          ({ (currentVersion: String) =>
+            val versionWithoutQualifier =
+              Version(currentVersion)
+                .getOrElse(versionFormatError(currentVersion))
+                .withoutQualifier
+            (maybeBump match {
+              case Some(bump) => versionWithoutQualifier.bump(bump)
+              case None => versionWithoutQualifier
+            }).string
+          })
+        }
+      }
+    }.value,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
