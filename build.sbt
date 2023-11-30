@@ -1,4 +1,5 @@
 import ReleaseTransformations.*
+import sbtversionpolicy.withsbtrelease.ReleaseVersion
 
 ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / crossScalaVersions := Seq(
@@ -54,6 +55,11 @@ lazy val `etag-caching-root` = (project in file("."))
   ).settings(baseSettings).settings(
     publish / skip := true,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
+    releaseVersion := {
+      ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease(
+        qualifier = sys.env.getOrElse("RELEASE_VERSION_QUALIFIER", "")
+      ).value
+    },
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
