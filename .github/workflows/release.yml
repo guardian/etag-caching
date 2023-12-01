@@ -6,6 +6,8 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       PGP_PASSPHRASE: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_PASSPHRASE }}
       SONATYPE_USERNAME: guardian.automated.maven.release
