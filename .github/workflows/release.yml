@@ -21,8 +21,11 @@ jobs:
           cache: sbt
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
           gpg-passphrase: PGP_PASSPHRASE
-      - run: git config user.email "automated.maven.release.noreply@theguardian.com"
-      - run: git config user.name "Guardian Automated Maven Release"
+      - name: Configure git
+        run: |
+          git config user.email "automated.maven.release.admins@theguardian.com"
+          git config user.name "Guardian Automated Maven Release"
+          git config commit.gpgsign true
       - name: Publish the release
         run: sbt "release with-defaults"
       - name: Create Github Release
