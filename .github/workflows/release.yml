@@ -25,3 +25,9 @@ jobs:
       - run: git config user.name "Guardian Automated Maven Release"
       - name: Publish the release
         run: sbt "release with-defaults"
+      - name: Create Github Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          release_tag=$(git describe --tags --abbrev=0)
+          gh release create $release_tag --generate-notes --verify-tag
