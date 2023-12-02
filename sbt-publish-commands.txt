@@ -1,0 +1,3 @@
+set ThisBuild / publishTo := Some(Resolver.file("roberto-test", file("/tmp/cooor")))
+
+;test;+publish
