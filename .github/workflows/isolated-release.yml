@@ -19,12 +19,42 @@ jobs:
         id: cache
         with:
           path: /tmp/funky
-          key: ${{ github.run_id }}-${{ github.run_attempt }}
+          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
 
 
-  sign-and-release:
-    name: Sign and release
+  sign:
+    name: Sign
     needs: create-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v3
+        with:
+          path: /tmp/funky
+          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Sign artifacts
+        run: |
+          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
+          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
+          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
+          
+          ls -lR /tmp/funky
+          find /tmp/funky -type f -exec gpg -a --local-user "$key_fingerprint" --detach-sign {} \;
+          ls -lR /tmp/funky
+      - uses: actions/cache/save@v3
+        with:
+          path: /tmp/funky
+          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+
+
+  release:
+    name: Release
+    needs: sign
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,11 +63,15 @@ jobs:
       SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
     steps:
       - uses: actions/cache/restore@v3
-        id: cache
         with:
           path: /tmp/funky
-          key: ${{ github.run_id }}-${{ github.run_attempt }}
+          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
       - name: Check contents
         run: |
           ls -lR /tmp/funky
-          
