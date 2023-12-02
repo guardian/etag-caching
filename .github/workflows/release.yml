@@ -28,7 +28,7 @@ jobs:
           key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
           
           git config user.email "$key_email"
-          git config user.name "$GITHUB_ACTOR using Guardian Automated Maven Release"
+          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
           git config commit.gpgsign true
           git config tag.gpgsign true
           git config user.signingkey "$key_fingerprint"
