@@ -67,11 +67,23 @@ jobs:
           path: /tmp/funky
           key: signed-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
+      - name: Create tiny sbt project to perform Sonatype upload
+        run: |
+          cat <<EOT > build.sbt
+          sonatypeBundleDirectory := new File("/tmp/funky")
+          sonatypeProfileName := "com.gu"
+          EOT
+          
+          mkdir project
+          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.21")' > project/plugins.sbt
+          echo 'sbt.version = 1.9.7' > project/build.properties
+          
+          ls -lR .
       - uses: actions/setup-java@v3
         with:
           distribution: corretto
           java-version: 17
           cache: sbt
-      - name: Check contents
+      - name: Release
         run: |
-          ls -lR /tmp/funky
+          sbt "sonatypeBundleRelease"
