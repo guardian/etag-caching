@@ -62,6 +62,7 @@ lazy val `etag-caching-root` = (project in file("."))
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
+      pushChanges,
       // For non cross-build projects, use releaseStepCommand("publishSigned")
       releaseStepCommandAndRemaining("+publishSigned"),
       releaseStepCommand("sonatypeBundleRelease"),
