@@ -1,0 +1,43 @@
+name: Isolated Release
+on:
+  workflow_dispatch:
+
+jobs:
+  create-artifacts:
+    name: Create unsigned artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+      - name: Generate artifacts
+        run: sbt publish
+      - uses: actions/cache/save@v3
+        id: cache
+        with:
+          path: /tmp/funky
+          key: ${{ github.run_id }}-${{ github.run_attempt }}
+
+
+  sign-and-release:
+    name: Sign and release
+    needs: create-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      SONATYPE_USERNAME: guardian.automated.maven.release
+      SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
+    steps:
+      - uses: actions/cache/restore@v3
+        id: cache
+        with:
+          path: /tmp/funky
+          key: ${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Check contents
+        run: |
+          ls -lR /tmp/funky
+          

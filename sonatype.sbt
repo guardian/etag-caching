@@ -1,6 +1,6 @@
 sonatypeProfileName := "com.gu"
 
-ThisBuild / publishTo := sonatypePublishToBundle.value
+ThisBuild / publishTo := Some(Resolver.file("roberto-test", file("/tmp/funky"))) // sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.gu.etag-caching"
 

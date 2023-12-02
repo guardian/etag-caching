@@ -8,7 +8,7 @@ ThisBuild / crossScalaVersions := Seq(
 )
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
 ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-
+ThisBuild / versionScheme := Some("early-semver")
 
 lazy val baseSettings = Seq(
   libraryDependencies ++= Seq(
