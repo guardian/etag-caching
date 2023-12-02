@@ -9,7 +9,6 @@ jobs:
     permissions:
       contents: write
     env:
-      PGP_PASSPHRASE: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_PASSPHRASE }}
       SONATYPE_USERNAME: guardian.automated.maven.release
       SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
     steps:
@@ -20,7 +19,6 @@ jobs:
           java-version: 17
           cache: sbt
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
-          gpg-passphrase: PGP_PASSPHRASE
       - name: Configure git
         run: |
           key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
