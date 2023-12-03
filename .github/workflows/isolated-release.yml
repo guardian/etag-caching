@@ -17,6 +17,9 @@ jobs:
   identifiers-for-signing-key:
     name: Read Identifiers from Signing Key
     runs-on: ubuntu-latest
+    outputs:
+      key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
+      key_email: ${{ steps.read-identifiers.outputs.key_email }}
     steps:
       - uses: actions/setup-java@v3
         with:
@@ -24,15 +27,17 @@ jobs:
           java-version: 17
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       - name: Read Identifiers from Signing Key
+        id: read-identifiers
         run: |
           key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
           key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
           key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
+          echo "key_fingerprint=$key_fingerprint"
           
-          {
-            "key_fingerprint=$key_fingerprint"
-            "key_email=$key_email"
-          } >> $GITHUB_OUTPUT
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          key_fingerprint=$key_fingerprint
+          key_email=$key_email"
+          EndOfFile
 
   generate-version-update-commits:
     name: Generate Version Update Commits
@@ -49,10 +54,12 @@ jobs:
           git config user.email "untrusted.with.signing.privileges@example.com"
           git config user.name "Untrusted With Signing Privileges"
           sbt "release with-defaults"
+          echo $GITHUB_WORKSPACE
           cd `mktemp -d`
           git clone --bare $GITHUB_WORKSPACE repo-with-unsigned-version-update-commits.git
-          rm -Rf $GITHUB_WORKSPACE
-          mv repo-with-unsigned-version-update-commits.git $GITHUB_WORKSPACE
+          rm -Rf $GITHUB_WORKSPACE/*
+          mv repo-with-unsigned-version-update-commits.git $GITHUB_WORKSPACE/
+          ls -lR $GITHUB_WORKSPACE
       - uses: actions/cache/save@v3
         with:
           path: repo-with-unsigned-version-update-commits.git
@@ -64,6 +71,9 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.create-commit.outputs.release_tag }}
+      release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -75,12 +85,14 @@ jobs:
           fail-on-cache-miss: true
       - uses: actions/setup-java@v3
         with:
+          distribution: corretto
           java-version: 17
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       - name: Create commit
+        id: create-commit
         env:
-          KEY_FINGERPRINT: ${{ steps.identifiers-for-signing-key.outputs.key_fingerprint }}
-          KEY_EMAIL: ${{ steps.identifiers-for-signing-key.outputs.key_email }}
+          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
+          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
           cd repo-with-unsigned-version-update-commits.git
           release_tag=$(git describe --tags --abbrev=0)
@@ -97,10 +109,10 @@ jobs:
           
           release_commit_id=$(git rev-parse HEAD^)
           
-          {
-            "release_tag=$release_tag"
-            "release_commit_id=$release_commit_id"
-          } >> $GITHUB_OUTPUT
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          release_tag=$release_tag
+          release_commit_id=$release_commit_id
+          EndOfFile
           
           git log --oneline -n3
           git push
@@ -112,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ steps.push-release-commit.outputs.release_commit_id }}
+          ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
       - uses: actions/setup-java@v3
         with:
           distribution: corretto
@@ -144,8 +156,9 @@ jobs:
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       - name: Sign artifacts
         env:
-          KEY_FINGERPRINT: ${{ steps.identifiers-for-signing-key.outputs.key_fingerprint }}
+          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
         run: |
+          echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
           ls -lR /tmp/funky
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
           ls -lR /tmp/funky
@@ -172,10 +185,10 @@ jobs:
           fail-on-cache-miss: true
       - name: Create tiny sbt project to perform Sonatype upload
         run: |
-          cat <<EOT > build.sbt
+          cat << EndOfFile > build.sbt
           sonatypeBundleDirectory := new File("/tmp/funky")
           sonatypeProfileName := "com.gu"
-          EOT
+          EndOfFile
           
           mkdir project
           echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.21")' > project/plugins.sbt
@@ -193,6 +206,6 @@ jobs:
       - name: Create Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.determine-release-version.outputs.RELEASE_TAG }}
+          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
           gh release create RELEASE_TAG --generate-notes --verify-tag
