@@ -2,12 +2,117 @@ name: Isolated Release
 on:
   workflow_dispatch:
 
+# Determine Release Version (project code)
+# Create Release Commit (release-workflow-code as GitHub App) - includes GitHub Actor in commit message
+#   * https://github.com/orgs/community/discussions/50055
+# ... wait on standard tests to run?!
+# Create artifacts (project code)
+# Sign artifacts (release-workflow-code as GitHub App)
+#  * Create Release Tag, with artifact hashes in tag message
+#  * Create post-Release Commit with post-release version
+# Release artifacts to Maven (release-workflow-code as GitHub App)
+# Create GitHub Release (release-workflow-code as GitHub App)
+
 jobs:
-  create-artifacts:
-    name: Create unsigned artifacts
+  identifiers-for-signing-key:
+    name: Read Identifiers from Signing Key
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Read Identifiers from Signing Key
+        run: |
+          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
+          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
+          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
+          
+          {
+            "key_fingerprint=$key_fingerprint"
+            "key_email=$key_email"
+          } >> $GITHUB_OUTPUT
+
+  generate-version-update-commits:
+    name: Generate Version Update Commits
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+      - name: Use sbt-release to construct version.sbt updates
+        run: |
+          git config user.email "untrusted.with.signing.privileges@example.com"
+          git config user.name "Untrusted With Signing Privileges"
+          sbt "release with-defaults"
+          cd `mktemp -d`
+          git clone --bare $GITHUB_WORKSPACE repo-with-unsigned-version-update-commits.git
+          rm -Rf $GITHUB_WORKSPACE
+          mv repo-with-unsigned-version-update-commits.git $GITHUB_WORKSPACE
+      - uses: actions/cache/save@v3
+        with:
+          path: repo-with-unsigned-version-update-commits.git
+          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+
+  push-release-commit:
+    name: Push Release Commit
+    needs: [generate-version-update-commits, identifiers-for-signing-key]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: repo
+      - uses: actions/cache/restore@v3
+        with:
+          path: repo-with-unsigned-version-update-commits.git
+          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Create commit
+        env:
+          KEY_FINGERPRINT: ${{ steps.identifiers-for-signing-key.outputs.key_fingerprint }}
+          KEY_EMAIL: ${{ steps.identifiers-for-signing-key.outputs.key_email }}
+        run: |
+          cd repo-with-unsigned-version-update-commits.git
+          release_tag=$(git describe --tags --abbrev=0)
+          
+          cd ../repo
+          git config user.email "$KEY_EMAIL"
+          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
+          git config commit.gpgsign true
+          git config user.signingkey "$KEY_FINGERPRINT"
+          
+          git remote add unsigned ../repo-with-unsigned-version-update-commits.git
+          git fetch unsigned
+          git rebase unsigned/main --exec 'git commit --amend --no-edit --reset-author'
+          
+          release_commit_id=$(git rev-parse HEAD^)
+          
+          {
+            "release_tag=$release_tag"
+            "release_commit_id=$release_commit_id"
+          } >> $GITHUB_OUTPUT
+          
+          git log --oneline -n3
+          git push
+
+  create-artifacts:
+    name: Create unsigned artifacts
+    needs: push-release-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.push-release-commit.outputs.release_commit_id }}
       - uses: actions/setup-java@v3
         with:
           distribution: corretto
@@ -24,7 +129,7 @@ jobs:
 
   sign:
     name: Sign
-    needs: create-artifacts
+    needs: [create-artifacts, identifiers-for-signing-key]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/cache/restore@v3
@@ -38,13 +143,11 @@ jobs:
           java-version: 17
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       - name: Sign artifacts
+        env:
+          KEY_FINGERPRINT: ${{ steps.identifiers-for-signing-key.outputs.key_fingerprint }}
         run: |
-          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
-          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
-          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
-          
           ls -lR /tmp/funky
-          find /tmp/funky -type f -exec gpg -a --local-user "$key_fingerprint" --detach-sign {} \;
+          find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
           ls -lR /tmp/funky
       - uses: actions/cache/save@v3
         with:
@@ -87,3 +190,9 @@ jobs:
       - name: Release
         run: |
           sbt "sonatypeBundleRelease"
+      - name: Create Github Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.determine-release-version.outputs.RELEASE_TAG }}
+        run: |
+          gh release create RELEASE_TAG --generate-notes --verify-tag
