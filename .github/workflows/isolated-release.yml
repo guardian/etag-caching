@@ -135,7 +135,7 @@ jobs:
           java-version: 17
           cache: sbt
       - name: Generate artifacts
-        run: sbt publish
+        run: sbt +publish
       - uses: actions/cache/save@v3
         id: cache
         with:
