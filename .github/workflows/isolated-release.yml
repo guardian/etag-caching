@@ -42,6 +42,7 @@ jobs:
 
   generate-version-update-commits:
     name: 🎊 Calculate Version Update
+    needs: identifiers-for-signing-key
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -51,9 +52,11 @@ jobs:
           java-version: 17
           cache: sbt
       - name: Use sbt-release to construct version.sbt updates
+        env:
+          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
-          git config user.email "untrusted.with.signing.privileges@example.com"
-          git config user.name "Untrusted With Signing Privileges"
+          git config user.email "$KEY_EMAIL"
+          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
           sbt "release with-defaults"
           echo $GITHUB_WORKSPACE
           cd `mktemp -d`
@@ -110,7 +113,7 @@ jobs:
           
           git remote add unsigned ../repo-with-unsigned-version-update-commits.git
           git fetch unsigned
-          git rebase --onto $GITHUB_REF_NAME $GITHUB_REF_NAME unsigned/$GITHUB_REF_NAME --exec 'git commit --amend --no-edit --reset-author'
+          git cherry-pick -S$KEY_FINGERPRINT $GITHUB_REF_NAME..unsigned/$GITHUB_REF_NAME
           git status
           
           release_commit_id=$(git rev-parse HEAD^)
