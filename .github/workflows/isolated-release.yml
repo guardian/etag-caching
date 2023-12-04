@@ -106,7 +106,7 @@ jobs:
           
           git remote add unsigned ../repo-with-unsigned-version-update-commits.git
           git fetch unsigned
-          git rebase unsigned/main --exec 'git commit --amend --no-edit --reset-author'
+          git rebase --onto $GITHUB_REF_NAME $GITHUB_REF_NAME unsigned/$GITHUB_REF_NAME --exec 'git commit --amend --no-edit --reset-author'
           
           release_commit_id=$(git rev-parse HEAD^)
           
