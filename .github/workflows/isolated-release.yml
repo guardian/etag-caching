@@ -15,7 +15,7 @@ on:
 
 jobs:
   identifiers-for-signing-key:
-    name: Read Identifiers from Signing Key
+    name: 🔒 Read Signing Key Id
     runs-on: ubuntu-latest
     outputs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
@@ -39,8 +39,9 @@ jobs:
           key_email=$key_email"
           EndOfFile
 
+
   generate-version-update-commits:
-    name: Generate Version Update Commits
+    name: 🎊 Calculate Version Update
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -66,7 +67,7 @@ jobs:
           key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
 
   push-release-commit:
-    name: Push Release Commit
+    name: 🔒 Push Release Commit
     needs: [generate-version-update-commits, identifiers-for-signing-key]
     permissions:
       contents: write
@@ -114,11 +115,11 @@ jobs:
           release_commit_id=$release_commit_id
           EndOfFile
           
-          git log --oneline -n3
+          git log --format="%h %p %ce %s" --decorate=short -n3
           git push
 
   create-artifacts:
-    name: Create unsigned artifacts
+    name: 🎊 Create unsigned artifacts
     needs: push-release-commit
     runs-on: ubuntu-latest
     steps:
@@ -138,9 +139,8 @@ jobs:
           path: /tmp/funky
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
 
-
   sign:
-    name: Sign
+    name: 🔒 Sign
     needs: [create-artifacts, identifiers-for-signing-key]
     runs-on: ubuntu-latest
     steps:
@@ -159,7 +159,6 @@ jobs:
           KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
         run: |
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
-          ls -lR /tmp/funky
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
           ls -lR /tmp/funky
       - uses: actions/cache/save@v3
@@ -167,9 +166,8 @@ jobs:
           path: /tmp/funky
           key: signed-${{ github.run_id }}-${{ github.run_attempt }}
 
-
   release:
-    name: Release
+    name: 🔒 Release
     needs: sign
     runs-on: ubuntu-latest
     permissions:
