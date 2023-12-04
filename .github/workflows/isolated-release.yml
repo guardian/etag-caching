@@ -170,20 +170,16 @@ jobs:
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
           ls -lR /tmp/funky
+          sha256deep -r -l /tmp/funky
       - uses: actions/cache/save@v3
         with:
           path: /tmp/funky
           key: signed-${{ github.run_id }}-${{ github.run_attempt }}
 
-  release:
-    name: 🔒 Release
+  sonatype-release:
+    name: 🔒 Sonatype Release
     needs: sign
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      SONATYPE_USERNAME: guardian.automated.maven.release
-      SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
     steps:
       - uses: actions/cache/restore@v3
         with:
@@ -208,11 +204,24 @@ jobs:
           java-version: 17
           cache: sbt
       - name: Release
+        env:
+          SONATYPE_USERNAME: guardian.automated.maven.release
+          SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
         run: |
           sbt "sonatypeBundleRelease"
+
+  github-release:
+    name: 🔒 GitHub Release
+    needs: sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Create Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
-          gh release create RELEASE_TAG --generate-notes --verify-tag
+          gh release create $RELEASE_TAG --generate-notes --verify-tag
+
