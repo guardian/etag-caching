@@ -99,6 +99,7 @@ jobs:
           release_tag=$(git describe --tags --abbrev=0)
           
           cd ../repo
+          git status
           git config user.email "$KEY_EMAIL"
           git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
           git config commit.gpgsign true
@@ -107,6 +108,7 @@ jobs:
           git remote add unsigned ../repo-with-unsigned-version-update-commits.git
           git fetch unsigned
           git rebase --onto $GITHUB_REF_NAME $GITHUB_REF_NAME unsigned/$GITHUB_REF_NAME --exec 'git commit --amend --no-edit --reset-author'
+          git status
           
           release_commit_id=$(git rev-parse HEAD^)
           
@@ -116,6 +118,7 @@ jobs:
           EndOfFile
           
           git log --format="%h %p %ce %s" --decorate=short -n3
+          git status
           git push
 
   create-artifacts:
