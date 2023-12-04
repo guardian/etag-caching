@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  call-reusable-workflow:
+  release:
     uses: guardian/github-actions-automated-maven-release/.github/workflows/reusable-automated-maven-release.yml@main
+    permissions:
+      contents: write
     secrets:
       AUTOMATED_MAVEN_RELEASE_PGP_SECRET: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
