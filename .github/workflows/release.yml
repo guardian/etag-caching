@@ -1,41 +1,11 @@
 name: Release
+
 on:
   workflow_dispatch:
 
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      SONATYPE_USERNAME: guardian.automated.maven.release
-      SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: corretto
-          java-version: 17
-          cache: sbt
-          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
-      - name: Configure git
-        run: |
-          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
-          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
-          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
-          
-          git config user.email "$key_email"
-          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
-          git config commit.gpgsign true
-          git config tag.gpgsign true
-          git config user.signingkey "$key_fingerprint"
-          git config --list
-      - name: Publish the release
-        run: sbt "release with-defaults"
-      - name: Create Github Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          release_tag=$(git describe --tags --abbrev=0)
-          gh release create $release_tag --generate-notes --verify-tag
+  call-reusable-workflow:
+    uses: guardian/github-actions-automated-maven-release/.github/workflows/reusable-automated-maven-release.yml@main
+    secrets:
+      AUTOMATED_MAVEN_RELEASE_PGP_SECRET: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
