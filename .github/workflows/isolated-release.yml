@@ -95,6 +95,9 @@ jobs:
           KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
+          echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
+          echo "GITHUB_REF=$GITHUB_REF"
+          
           cd repo-with-unsigned-version-update-commits.git
           release_tag=$(git describe --tags --abbrev=0)
           
