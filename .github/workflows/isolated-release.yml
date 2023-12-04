@@ -29,6 +29,9 @@ jobs:
       - name: Read Identifiers from Signing Key
         id: read-identifiers
         run: |
+          sudo apt install hashdeep
+          sha256deep -r -l .
+          
           key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
           key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
           key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
