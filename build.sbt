@@ -1,4 +1,5 @@
 import ReleaseTransformations.*
+import sbtversionpolicy.withsbtrelease.ReleaseVersion
 
 ThisBuild / scalaVersion := "2.13.12"
 ThisBuild / crossScalaVersions := Seq(
@@ -8,7 +9,6 @@ ThisBuild / crossScalaVersions := Seq(
 )
 ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
 ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / versionScheme := Some("early-semver")
 
 lazy val baseSettings = Seq(
   libraryDependencies ++= Seq(
@@ -53,6 +53,7 @@ lazy val `etag-caching-root` = (project in file("."))
     `aws-s3-sdk-v2`
   ).settings(baseSettings).settings(
     publish / skip := true,
+    releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
