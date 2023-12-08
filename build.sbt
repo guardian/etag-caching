@@ -7,10 +7,11 @@ ThisBuild / crossScalaVersions := Seq(
   "3.3.1",
   "2.12.18" // Motivated by facia/FAPI clients still on Scala 2.12
 )
-ThisBuild / scalacOptions := Seq("-deprecation", "-release","11")
-ThisBuild / licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / scalacOptions := Seq("-deprecation", "-release:11")
 
 lazy val baseSettings = Seq(
+  organization := "com.gu.etag-caching",
+  licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.17" % Test
   ),
@@ -51,7 +52,7 @@ lazy val `etag-caching-root` = (project in file("."))
     core,
     `aws-s3-base`,
     `aws-s3-sdk-v2`
-  ).settings(baseSettings).settings(
+  ).settings(
     publish / skip := true,
     releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value,
     releaseCrossBuild := true, // true if you cross-build the project for multiple Scala versions
