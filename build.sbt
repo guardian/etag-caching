@@ -42,7 +42,7 @@ val awsSdkForVersion = Map(
 )
 
 lazy val `aws-s3-base` =
-  project.in(file("aws-s3/base")).dependsOn(core)
+  project.in(file("aws-s3/base")).settings(baseSettings).dependsOn(core)
 
 
 lazy val `aws-s3-sdk-v2` = awsS3WithSdkVersion(2)
