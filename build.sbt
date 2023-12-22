@@ -11,7 +11,7 @@ ThisBuild / scalacOptions := Seq("-deprecation", "-release:11")
 
 lazy val baseSettings = Seq(
   organization := "com.gu.etag-caching",
-  licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
+  licenses := Seq(License.Apache2),
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.17" % Test
   ),
