@@ -5,8 +5,13 @@ on:
 
 jobs:
   release:
-    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@main
+    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@output-version-to-caller-workflow-to-support-post-release-actions-like-npm
     permissions: { contents: write, pull-requests: write }
     secrets:
       SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
       PGP_PRIVATE_KEY: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+  check-output-version:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - run: echo "The release version was ${{ needs.release.outputs.RELEASE_VERSION }}"
