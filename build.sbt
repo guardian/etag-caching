@@ -13,7 +13,7 @@ lazy val baseSettings = Seq(
   organization := "com.gu.etag-caching",
   licenses := Seq(License.Apache2),
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.17" % Test
+    "org.scalatest" %% "scalatest" % "3.2.18" % Test
   ),
   Test / testOptions +=
     Tests.Argument(TestFrameworks.ScalaTest, "-u", s"test-results/scala-${scalaVersion.value}", "-o")
