@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: zulu
-          java-version: 8.58
+          java-version-file: .tool-versions
           cache: sbt
       - name: Build and Test
         run: sbt -v +test
