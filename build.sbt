@@ -32,7 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
     .settings(baseSettings,
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
-        "com.adobe.testing" % "s3mock-testcontainers" % "3.7.1" % Test
+        "com.adobe.testing" % "s3mock-testcontainers" % "3.7.2" % Test
       )
     )
 
