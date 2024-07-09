@@ -1,7 +1,7 @@
 package com.gu.etagcaching
 
-import com.github.blemale.scaffeine.Scaffeine
-import com.gu.etagcaching.fetching.ETaggedData
+import com.github.blemale.scaffeine.{AsyncLoadingCache, Scaffeine}
+import com.gu.etagcaching.fetching.{ETaggedData, Missing, MissingOrETagged}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,13 +34,16 @@ class ETagCache[K, V](
   configureCache: ConfigCache
 )(implicit ec: ExecutionContext) {
 
-  private val cache = configureCache(Scaffeine()).buildAsyncFuture[K, ETaggedData[V]](
+  private val cache: AsyncLoadingCache[K, MissingOrETagged[V]] = configureCache(Scaffeine()).buildAsyncFuture[K, MissingOrETagged[V]](
     loader = loading.fetchAndParse,
-    reloadLoader = Some(loading.fetchThenParseIfNecessary)
-  )
+    reloadLoader = Some(
+       (key: K, old: MissingOrETagged[V]) => old match {
+         case Missing => loading.fetchAndParse(key)
+         case oldETaggedData: ETaggedData[V] => loading.fetchThenParseIfNecessary(key, oldETaggedData)
+       }
+    ))
 
   private val read = freshnessPolicy.on(cache)
 
-  def get(key: K): Future[V] = read(key).map(_.result)
-
+  def get(key: K): Future[Option[V]] = read(key).map(_.toOption)
 }

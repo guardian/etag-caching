@@ -6,12 +6,12 @@ import com.gu.etagcaching.fetching.Fetching._
 
 import java.time.{Duration, Instant}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait Fetching[K, Response] {
-  def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]]
+  def fetch(key: K)(implicit ec: ExecutionContext): Future[MissingOrETagged[Response]]
 
-  def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]]
+  def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Response]]]
 
   def timing(
     attemptWith: Duration => Unit = _ => (),
@@ -57,28 +57,28 @@ object Fetching {
       resultF
     }
 
-    override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
+    override def fetch(key: K)(implicit ec: ExecutionContext): Future[MissingOrETagged[Response]] =
       time(underlying.fetch(key))(_ => FullFetch)
 
-    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
+    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Response]]] =
       time(underlying.fetchOnlyIfETagChanged(key, eTag))(_.map(_ => FullFetch).getOrElse(NotModified))
   }
 
   private case class KeyAdapter[K, UnderlyingK, Response](underlying: Fetching[UnderlyingK, Response])(f: K => UnderlyingK)
     extends Fetching[K, Response] {
-    override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
+    override def fetch(key: K)(implicit ec: ExecutionContext): Future[MissingOrETagged[Response]] =
       underlying.fetch(f(key))
 
-    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
+    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Response]]] =
       underlying.fetchOnlyIfETagChanged(f(key), eTag)
   }
 
   private case class ResponseMapper[K, UnderlyingResponse, Response](underlying: Fetching[K, UnderlyingResponse])(f: UnderlyingResponse => Response)
     extends Fetching[K, Response] {
-    override def fetch(key: K)(implicit ec: ExecutionContext): Future[ETaggedData[Response]] =
+    override def fetch(key: K)(implicit ec: ExecutionContext): Future[MissingOrETagged[Response]] =
       underlying.fetch(key).map(_.map(f))
 
-    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[ETaggedData[Response]]] =
+    override def fetchOnlyIfETagChanged(key: K, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Response]]] =
       underlying.fetchOnlyIfETagChanged(key, eTag).map(_.map(_.map(f)))
   }
 }
