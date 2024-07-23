@@ -7,7 +7,7 @@ import com.gu.etagcaching.aws.s3.ObjectId
 import com.gu.etagcaching.aws.sdkv2.s3.ExampleParser.parseFruit
 import com.gu.etagcaching.aws.sdkv2.s3.S3ClientForS3Mock.createS3clientFor
 import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -20,8 +20,9 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with IntegrationPatience with BeforeAndAfter {
+class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with OptionValues with IntegrationPatience with BeforeAndAfter {
   val ExampleS3Object: ObjectId = ObjectId("test-bucket", "path")
+  val ExampleMissingS3Object: ObjectId = ObjectId("test-bucket", "nothing-should-be-here")
 
   val s3Mock: S3MockContainer = new S3MockContainer("latest").withInitialBuckets(ExampleS3Object.bucket)
   before(s3Mock.start())
@@ -43,12 +44,14 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
     )
 
     uploadFile("banana.xml.gz")
-    fruitCache.get(ExampleS3Object).futureValue.colour shouldBe "yellow"
-    fruitCache.get(ExampleS3Object).futureValue.colour shouldBe "yellow"
+    fruitCache.get(ExampleS3Object).futureValue.value.colour shouldBe "yellow"
+    fruitCache.get(ExampleS3Object).futureValue.value.colour shouldBe "yellow"
 
     uploadFile("kiwi.xml.gz")
-    fruitCache.get(ExampleS3Object).futureValue.colour shouldBe "green"
+    fruitCache.get(ExampleS3Object).futureValue.value.colour shouldBe "green"
     // Note that the value is correct, without us explicitly clearing the cache - ETag-checking saved us!
+
+    fruitCache.get(ExampleMissingS3Object).futureValue shouldBe None
   }
 
   private def uploadFile(demoFile: String): Unit = {
