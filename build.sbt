@@ -22,7 +22,7 @@ lazy val baseSettings = Seq(
 lazy val core =
   project.settings(baseSettings,
     libraryDependencies ++= Seq(
-      "com.github.blemale" %% "scaffeine" % "5.2.1"
+      "com.github.blemale" %% "scaffeine" % "5.3.0"
     )
   )
 
