@@ -13,7 +13,7 @@ lazy val baseSettings = Seq(
   organization := "com.gu.etag-caching",
   licenses := Seq(License.Apache2),
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.18" % Test
+    "org.scalatest" %% "scalatest" % "3.2.19" % Test
   ),
   Test / testOptions +=
     Tests.Argument(TestFrameworks.ScalaTest, "-u", s"test-results/scala-${scalaVersion.value}", "-o")
@@ -32,7 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
     .settings(baseSettings,
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
-        "com.adobe.testing" % "s3mock-testcontainers" % "3.7.3" % Test
+        "com.adobe.testing" % "s3mock-testcontainers" % "3.9.1" % Test
       )
     )
 
