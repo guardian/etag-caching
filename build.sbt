@@ -1,7 +1,7 @@
 import ReleaseTransformations.*
 import sbtversionpolicy.withsbtrelease.ReleaseVersion
 
-ThisBuild / scalaVersion := "2.13.14"
+ThisBuild / scalaVersion := "2.13.15"
 ThisBuild / crossScalaVersions := Seq(
   scalaVersion.value,
   "3.3.1",
@@ -32,7 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
     .settings(baseSettings,
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
-        "com.adobe.testing" % "s3mock-testcontainers" % "3.10.0" % Test
+        "com.adobe.testing" % "s3mock-testcontainers" % "3.10.3" % Test
       )
     )
 
