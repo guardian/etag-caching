@@ -22,7 +22,7 @@ lazy val baseSettings = Seq(
 lazy val core =
   project.settings(baseSettings,
     libraryDependencies ++= Seq(
-      "com.github.blemale" %% "scaffeine" % "5.2.1"
+      "com.github.blemale" %% "scaffeine" % "5.3.0"
     )
   )
 
@@ -32,7 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
     .settings(baseSettings,
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
-        "com.adobe.testing" % "s3mock-testcontainers" % "3.9.1" % Test
+        "com.adobe.testing" % "s3mock-testcontainers" % "3.10.0" % Test
       )
     )
 
