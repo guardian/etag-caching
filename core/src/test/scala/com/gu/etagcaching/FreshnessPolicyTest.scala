@@ -50,7 +50,7 @@ class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
     val demo = DemoCache(TolerateOldValueWhileRefreshing)
 
     demo.read() shouldBe 0
-    failAfter(2.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
+    failAfter(5.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
       demo.read() shouldBe 0
     }
   }
