@@ -1,8 +1,9 @@
 package com.gu.etagcaching.aws.sdkv2.s3
 
 import com.gu.etagcaching.Endo
-import com.gu.etagcaching.aws.s3.ObjectId
+import com.gu.etagcaching.aws.s3.{ByteArrayFetching, ObjectId}
 import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer
+import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
 import com.gu.etagcaching.fetching.{ETaggedData, Fetching, Missing, MissingOrETagged}
 import software.amazon.awssdk.core.internal.util.ThrowableUtils
 import software.amazon.awssdk.services.s3.S3AsyncClient
@@ -42,3 +43,10 @@ case class S3ObjectFetching[Response](s3Client: S3AsyncClient, transformer: Tran
     }
 }
 
+object S3ObjectFetching extends ByteArrayFetching[S3AsyncClient] {
+  /**
+   * Convenience method for creating a fetcher that just returns a simple byte array.
+   */
+  def byteArrayWith(s3AsyncClient: S3AsyncClient): Fetching[ObjectId, Array[Byte]] =
+    S3ObjectFetching(s3AsyncClient, Bytes).mapResponse(_.asByteArray())
+}
