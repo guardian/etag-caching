@@ -5,8 +5,8 @@ on:
 
 jobs:
   release:
-    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@v1
-    permissions: { contents: write, pull-requests: write }
+    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@attest
+    permissions: { contents: write, pull-requests: write, id-token: write, attestations: write }
     secrets:
       SONATYPE_TOKEN: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_TOKEN }}
       PGP_PRIVATE_KEY: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
