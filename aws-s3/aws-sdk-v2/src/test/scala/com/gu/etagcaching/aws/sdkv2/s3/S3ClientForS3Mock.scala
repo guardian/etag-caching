@@ -11,7 +11,7 @@ import software.amazon.awssdk.utils.AttributeMap
 import java.net.URI
 
 object S3ClientForS3Mock {
-  def createS3clientFor(s3Mock: S3MockContainer) = S3AsyncClient.builder()
+  def createS3clientFor(s3Mock: S3MockContainer): S3AsyncClient = S3AsyncClient.builder()
     .region(Region.of("us-east-1"))
     .credentialsProvider(
       StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
