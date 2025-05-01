@@ -4,8 +4,8 @@ import sbtversionpolicy.withsbtrelease.ReleaseVersion
 ThisBuild / scalaVersion := "2.13.16"
 ThisBuild / crossScalaVersions := Seq(
   scalaVersion.value,
-  "3.3.1",
-  "2.12.18" // Motivated by facia/FAPI clients still on Scala 2.12
+  "3.3.5",
+  "2.12.20" // Motivated by facia/FAPI clients still on Scala 2.12
 )
 ThisBuild / scalacOptions := Seq("-deprecation", "-release:11")
 
@@ -32,7 +32,7 @@ def awsS3WithSdkVersion(version: Int)=
     .settings(baseSettings,
       libraryDependencies ++= Seq(
         awsSdkForVersion(version),
-        "com.adobe.testing" % "s3mock-testcontainers" % "4.0.0" % Test
+        "com.adobe.testing" % "s3mock-testcontainers" % "4.1.1" % Test
       )
     )
 
