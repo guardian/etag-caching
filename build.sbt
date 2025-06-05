@@ -4,7 +4,7 @@ import sbtversionpolicy.withsbtrelease.ReleaseVersion
 ThisBuild / scalaVersion := "2.13.16"
 ThisBuild / crossScalaVersions := Seq(
   scalaVersion.value,
-  "3.3.5",
+  "3.3.6",
   "2.12.20" // Motivated by facia/FAPI clients still on Scala 2.12
 )
 ThisBuild / scalacOptions := Seq("-deprecation", "-release:11")
