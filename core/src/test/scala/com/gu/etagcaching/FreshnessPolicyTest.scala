@@ -2,18 +2,22 @@ package com.gu.etagcaching
 
 import com.github.blemale.scaffeine.{AsyncLoadingCache, Scaffeine}
 import com.gu.etagcaching.FreshnessPolicy.{AlwaysWaitForRefreshedValue, TolerateOldValueWhileRefreshing}
+import com.gu.etagcaching.fetching.{ETaggedData, Fetching, MissingOrETagged}
+import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.SpanSugar._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.{ExecutionContext, Future}
 
-class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
+class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures with OptionValues {
 
   case class DemoCache(policy: FreshnessPolicy) {
+    import scala.concurrent.ExecutionContext.Implicits.global
+
     lazy val exampleCache: AsyncLoadingCache[String, Int] = {
       def simulateWork(task: String, key: String, millis: Long): Unit = {
         println(s"$task begin: $key")
@@ -53,5 +57,33 @@ class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures {
     failAfter(5.millis) { // should be instant, because we're _not_ waiting for the ETag-checking fetch
       demo.read() shouldBe 0
     }
+  }
+
+  it should "mean that ETagCache won't make additional requests if a value is cached locally" in {
+    val eTagCache = new ETagCache[String, Int](
+      new Fetching[String, Int] {
+        val counter = new AtomicInteger()
+
+        override def fetch(key: String)(implicit ec: ExecutionContext): Future[MissingOrETagged[Int]] = {
+          val count = counter.getAndIncrement()
+          Future.successful(ETaggedData(count.toString, count))
+        }
+        override def fetchOnlyIfETagChanged(key: String, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Int]]] =
+          fetch(key)(ec).map(Some(_))
+
+      }.thenParsing(identity),
+      TolerateOldValueWhileRefreshing,
+      _.maximumSize(1).expireAfterWrite(100.millis)
+    )(ExecutionContext.Implicits.global)
+
+    eTagCache.get("KEY").futureValue.value shouldBe 0
+    eTagCache.get("KEY").futureValue.value shouldBe 0
+    eTagCache.get("KEY").futureValue.value shouldBe 0
+    Thread.sleep(200)
+    eTagCache.get("KEY").futureValue.value shouldBe 1
+    Thread.sleep(30)
+    eTagCache.get("KEY").futureValue.value shouldBe 1
+    Thread.sleep(30)
+    eTagCache.get("KEY").futureValue.value shouldBe 1
   }
 }

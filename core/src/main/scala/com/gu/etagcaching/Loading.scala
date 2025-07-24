@@ -1,5 +1,6 @@
 package com.gu.etagcaching
 
+import com.gu.etagcaching.Loading.{OnUpdate, Update}
 import com.gu.etagcaching.fetching.{ETaggedData, Fetching, MissingOrETagged}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -25,6 +26,8 @@ trait Loading[K, V] {
    * any new data, and can just reuse our old data, saving us CPU time and network bandwidth.
    */
   def fetchThenParseIfNecessary(k: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[MissingOrETagged[V]]
+  
+  def onUpdate(handler: Update[K,V] => Unit): Loading[K, V] = OnUpdate(this)(handler)
 }
 
 object Loading {
@@ -37,6 +40,28 @@ object Loading {
         case None => oldV // we got HTTP 304 'NOT MODIFIED': there's no new data - old data is still valid
         case Some(freshResponse) => freshResponse.map(parse)
       }
+  }
+
+  case class Update[K, V](key: K, oldV: Option[V], newV: Option[V])
+  
+  case class OnUpdate[K, V](underlying: Loading[K, V])(handler: Update[K,V] => Unit)
+    extends Loading[K, V] {
+
+    override def fetchAndParse(key: K)(implicit ec: ExecutionContext): Future[MissingOrETagged[V]] =
+      handle(key, None, underlying.fetchAndParse(key))
+
+    private def handle(key: K, oldV: Option[V], fut: Future[MissingOrETagged[V]])(implicit ec: ExecutionContext): Future[MissingOrETagged[V]] = {
+      for {
+        wrappedNewV <- fut
+      } {
+        handler(Update(key, oldV, wrappedNewV.toOption))
+      }
+      fut
+    }
+
+    override def fetchThenParseIfNecessary(key: K, oldV: ETaggedData[V])(implicit ec: ExecutionContext): Future[MissingOrETagged[V]] =
+      handle(key, oldV.toOption, underlying.fetchAndParse(key))
+
   }
 }
 
