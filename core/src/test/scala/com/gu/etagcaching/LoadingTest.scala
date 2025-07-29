@@ -21,7 +21,6 @@ class LoadingTest extends AnyFlatSpec with Matchers with ScalaFutures with Optio
     val cache = new ETagCache(
       fetching.thenParsing(identity).onUpdate { update =>
         updates.append(update)
-        println(s"Got an update: $update")
       },
       TolerateOldValueWhileRefreshing,
       _.maximumSize(1).refreshAfterWrite(100.millis)
