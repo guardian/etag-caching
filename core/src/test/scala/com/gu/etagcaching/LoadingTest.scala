@@ -1,45 +1,97 @@
 package com.gu.etagcaching
 
-import com.gu.etagcaching.FreshnessPolicy.TolerateOldValueWhileRefreshing
+import com.gu.etagcaching.FreshnessPolicy.AlwaysWaitForRefreshedValue
 import com.gu.etagcaching.Loading.Update
-import com.gu.etagcaching.fetching.Fetching
-import org.scalatest.OptionValues
+import com.gu.etagcaching.LoadingTest.TestApparatus
+import com.gu.etagcaching.fetching.{ETaggedData, Fetching}
+import com.gu.etagcaching.testkit.{CountingParser, TestFetching}
+import org.scalatest.OptionValues.convertOptionToValuable
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.{Inside, OptionValues}
 
+import java.time.DayOfWeek
+import java.time.DayOfWeek.{MONDAY, SATURDAY, THURSDAY}
+import java.util.Locale
+import java.util.Locale.{FRANCE, GERMANY, UK}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
-class LoadingTest extends AnyFlatSpec with Matchers with ScalaFutures with OptionValues with Eventually {
-  "onUpdate" should "give callbacks that allow logging updates" in {
-    val updates: mutable.Buffer[Update[String, Int]] = mutable.Buffer.empty
+object LoadingTest {
+  /**
+   * Uses a mock (optionally mutable) Map 'dataStore'. Provides an instance of [[Loading]] that fetches from that
+   * datastore, and parses using the provided parser (counting how many times that parsing occurs).
+   */
+  class TestApparatus[K, Response, V](dataStore: scala.collection.Map[K, Response])(parser: Response => V) {
+    private val countingParser = new CountingParser[Response, V](parser)
+    val loading: Loading[K, V] = TestFetching.withStubDataStore(dataStore).thenParsing(countingParser)
 
-    val fetching: Fetching[String, Int] = TestFetching.withIncrementingValues
+    def parseCount(): Long = countingParser.count()
+
+    def parsesCountedDuringConditionalLoadOf(k: K, oldV: ETaggedData[V]): Long = {
+      val before = parseCount()
+      loading.fetchThenParseIfNecessary(k, oldV).futureValue.toOption.value shouldBe parser(dataStore(k))
+      parseCount() - before
+    }
+  }
+}
+
+class LoadingTest extends AnyFlatSpec with Matchers with ScalaFutures with OptionValues with Eventually with Inside {
+
+  "Creating a Loading instance from a Fetching instance" should "be done with 'thenParsing'" in {
+    val fetching: Fetching[Locale, String] =
+      TestFetching.withStubDataStore(Map(FRANCE -> "THURSDAY", GERMANY -> "MONDAY"))
+
+    val loading: Loading[Locale, DayOfWeek] = fetching.thenParsing(DayOfWeek.valueOf)
+
+    loading.fetchAndParse(FRANCE).futureValue.toOption.value shouldBe THURSDAY
+    loading.fetchAndParse(GERMANY).futureValue.toOption.value shouldBe MONDAY
+  }
+
+  "fetchThenParseIfNecessary" should "*only* do parsing if fetching found a change in ETag value" in {
+    val dataStore = mutable.Map(UK -> "SATURDAY")
+    val testApparatus = new TestApparatus(dataStore)(parser = DayOfWeek.valueOf)
+
+    inside(testApparatus.loading.fetchAndParse(UK).futureValue) { case initialLoad: ETaggedData[DayOfWeek] =>
+      testApparatus.parseCount() shouldBe 1
+      initialLoad.result shouldBe SATURDAY
+
+      // No additional parse performed, as UK value's ETag unchanged
+      testApparatus.parsesCountedDuringConditionalLoadOf(UK, initialLoad) shouldBe 0
+
+      dataStore(UK) = "MONDAY"
+
+      // UK's ETag changed, we must parse the new value!
+      testApparatus.parsesCountedDuringConditionalLoadOf(UK, initialLoad) shouldBe 1
+    }
+  }
+
+  "onUpdate" should "provide callbacks that allow logging updates" in {
+    val dataStore = mutable.Map(UK -> "SATURDAY")
+    val testApparatus = new TestApparatus(dataStore)(parser = DayOfWeek.valueOf)
+
+    val updates: mutable.Buffer[Update[Locale, DayOfWeek]] = mutable.Buffer.empty
 
     val cache = new ETagCache(
-      fetching.thenParsing(identity).onUpdate { update =>
-        updates.append(update)
-      },
-      TolerateOldValueWhileRefreshing,
-      _.maximumSize(1).refreshAfterWrite(100.millis)
+      testApparatus.loading.onUpdate(update => updates.append(update)),
+      AlwaysWaitForRefreshedValue,
+      _.maximumSize(1)
     )
 
     val expectedUpdates = Seq(
-      Update("key", None, Some(0)),
-      Update("key", Some(0), Some(1))
+      Update(UK, None, Some(SATURDAY)),
+      Update(UK, Some(SATURDAY), Some(MONDAY))
     )
 
-    cache.get("key").futureValue shouldBe Some(0)
-    updates shouldBe expectedUpdates.take(1)
+    cache.get(UK).futureValue shouldBe Some(SATURDAY)
+    eventually(updates should contain theSameElementsInOrderAs expectedUpdates.take(1))
 
-    Thread.sleep(105)
+    dataStore(UK) = "MONDAY"
 
-    eventually { cache.get("key").futureValue shouldBe Some(1) }
-    updates.toSeq shouldBe expectedUpdates
-
-    Thread.sleep(105)
-    updates.toSeq shouldBe expectedUpdates // No updates if we're not requesting the key from the cache
+    cache.get(UK).futureValue shouldBe Some(MONDAY)
+    eventually(updates should contain theSameElementsInOrderAs expectedUpdates)
   }
 }
