@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * ETagCache caches resolved-key-values along with their `ETag`, a content hash supplied & recognised by the
  * remote service. ETagCache (when used with a [[AlwaysWaitForRefreshedValue]] policy)
  * ''will'' always connect to the service for each request for a key-value, but where it already holds a
- * cached `ETaggedData`, it will send the `ETag` with it's request, and the service will return a
+ * cached `ETaggedData`, it will send the `ETag` with its request, and the service will return a
  * response indicating if the content has changed or not. If the content is unchanged, the response will
  * be blank, saving network bandwidth, and the old value can be used, saving CPU by not having to parse the
  * data again.
