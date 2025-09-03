@@ -37,7 +37,31 @@ trait Fetching[K, Response] {
 
   def mapResponse[Response2](f: Response => Response2)(implicit ec: ExecutionContext): Fetching[K, Response2] = ResponseMapper(this)(f)
 
-  def thenParsing[V](parse: Response => V)(implicit parsingEC: ExecutionContext): Loading[K, V] = Loading.by(this)(parse)
+  /**
+   * Transforms this [[Fetching]] instance into a full [[Loading]] instance by saying how to parse
+   * the fetched response.
+   *
+   * If you happen to need the `key` to parse the response, use [[thenParsingWithKey]].
+   */
+  def thenParsing[V](parse: Response => V)(implicit parsingEC: ExecutionContext): Loading[K, V] = thenParsingWithKey((_, response) => parse(response))
+
+  /**
+   * Transforms this [[Fetching]] instance into a full [[Loading]] instance by saying how to parse
+   * the fetched response - in this particular case, the parsing method is passed the `key`
+   * as well as the fetched response.
+   *
+   * If you don't need the `key` to parse the response, just use [[thenParsing]].
+   */
+  def thenParsingWithKey[V](parse: (K, Response) => V)(implicit parsingEC: ExecutionContext): Loading[K, V] = new Loading[K, V] {
+    def fetchAndParse(key: K): Future[MissingOrETagged[V]] =
+      fetch(key).map(_.map(parse(key, _)))
+
+    def fetchThenParseIfNecessary(key: K, oldV: ETaggedData[V]): Future[MissingOrETagged[V]] =
+      fetchOnlyIfETagChanged(key, oldV.eTag).map {
+        case None => oldV // we got HTTP 304 'NOT MODIFIED': there's no new data - old data is still valid
+        case Some(freshResponse) => freshResponse.map(parse(key, _))
+      }
+  }
 }
 
 object Fetching {
