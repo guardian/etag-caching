@@ -10,11 +10,11 @@ object TestFetching {
   def withIncrementingValues: Fetching[String, Int] = new Fetching[String, Int] {
     val counter = new AtomicInteger()
 
-    override def fetch(key: String)(implicit ec: ExecutionContext): Future[MissingOrETagged[Int]] = {
+    override def fetch(key: String): Future[MissingOrETagged[Int]] = {
       val count = counter.getAndIncrement()
       Future.successful(ETaggedData(count.toString, count))
     }
-    override def fetchOnlyIfETagChanged(key: String, eTag: String)(implicit ec: ExecutionContext): Future[Option[MissingOrETagged[Int]]] =
-      fetch(key)(ec).map(Some(_))
+    override def fetchOnlyIfETagChanged(key: String, eTag: String): Future[Option[MissingOrETagged[Int]]] =
+      fetch(key).map(Some(_))(ExecutionContext.parasitic)
   }
 }

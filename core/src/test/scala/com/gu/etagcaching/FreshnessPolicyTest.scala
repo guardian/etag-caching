@@ -63,10 +63,10 @@ class FreshnessPolicyTest extends AnyFlatSpec with Matchers with ScalaFutures wi
     val fetching: Fetching[String, Int] = TestFetching.withIncrementingValues
 
     val eTagCache = new ETagCache[String, Int](
-      fetching.thenParsing(identity),
+      fetching.thenParsing(identity)(ExecutionContext.parasitic),
       TolerateOldValueWhileRefreshing,
       _.maximumSize(1).expireAfterWrite(100.millis)
-    )(ExecutionContext.Implicits.global)
+    )
 
     eTagCache.get("KEY").futureValue.value shouldBe 0
     eTagCache.get("KEY").futureValue.value shouldBe 0
