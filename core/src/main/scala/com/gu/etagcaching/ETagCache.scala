@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * ETagCache caches resolved-key-values along with their `ETag`, a content hash supplied & recognised by the
  * remote service. ETagCache (when used with a [[AlwaysWaitForRefreshedValue]] policy)
  * ''will'' always connect to the service for each request for a key-value, but where it already holds a
- * cached `ETaggedData`, it will send the `ETag` with it's request, and the service will return a
+ * cached `ETaggedData`, it will send the `ETag` with its request, and the service will return a
  * response indicating if the content has changed or not. If the content is unchanged, the response will
  * be blank, saving network bandwidth, and the old value can be used, saving CPU by not having to parse the
  * data again.
@@ -32,18 +32,17 @@ class ETagCache[K, V](
   loading: Loading[K, V],
   freshnessPolicy: FreshnessPolicy,
   configureCache: ConfigCache
-)(implicit ec: ExecutionContext) {
-
+) {
   private val cache: AsyncLoadingCache[K, MissingOrETagged[V]] = configureCache(Scaffeine()).buildAsyncFuture[K, MissingOrETagged[V]](
     loader = loading.fetchAndParse,
     reloadLoader = Some(
        (key: K, old: MissingOrETagged[V]) => old match {
          case Missing => loading.fetchAndParse(key)
-         case oldETaggedData: ETaggedData[V] => loading.fetchThenParseIfNecessary(key, oldETaggedData)
+         case oldETaggedData: ETaggedData[V] @unchecked => loading.fetchThenParseIfNecessary(key, oldETaggedData)
        }
     ))
 
   private val read = freshnessPolicy.on(cache)
 
-  def get(key: K): Future[Option[V]] = read(key).map(_.toOption)
+  def get(key: K): Future[Option[V]] = read(key).map(_.toOption)(ExecutionContext.parasitic)
 }
