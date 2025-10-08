@@ -53,9 +53,9 @@ object Loading {
   /**
    * Wrapper round an underlying instance of Loading which adds handler for doing side-effectful logging of updates.
    *
-   * @param loggingEC ExecutionContext for the `handler` function to run in
+   * @param handlerEC ExecutionContext for the `handler` function to run in
    */
-  case class OnUpdate[K, V](underlying: Loading[K, V])(handler: Update[K,V] => Unit)(implicit loggingEC: ExecutionContext)
+  case class OnUpdate[K, V](underlying: Loading[K, V])(handler: Update[K,V] => Unit)(implicit handlerEC: ExecutionContext)
     extends Loading[K, V] {
 
     override def fetchAndParse(key: K): Future[MissingOrETagged[V]] =
