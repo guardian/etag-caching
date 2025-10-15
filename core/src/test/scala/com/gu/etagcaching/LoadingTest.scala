@@ -15,6 +15,8 @@ import org.scalatest.{Inside, OptionValues}
 
 import java.time.DayOfWeek
 import java.time.DayOfWeek.{MONDAY, SATURDAY, THURSDAY}
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoField.DAY_OF_WEEK
 import java.util.Locale
 import java.util.Locale.{FRANCE, GERMANY, UK}
 import scala.collection.mutable
@@ -46,6 +48,18 @@ class LoadingTest extends AnyFlatSpec with Matchers with ScalaFutures with Optio
       TestFetching.withStubDataStore(Map(FRANCE -> "THURSDAY", GERMANY -> "MONDAY"))
 
     val loading: Loading[Locale, DayOfWeek] = fetching.thenParsing(DayOfWeek.valueOf)
+
+    loading.fetchAndParse(FRANCE).futureValue.toOption.value shouldBe THURSDAY
+    loading.fetchAndParse(GERMANY).futureValue.toOption.value shouldBe MONDAY
+  }
+
+  it should "be possible with 'thenParsingWithKey', if we need the key for the 'parsing' phase" in {
+    val fetching: Fetching[Locale, String] =
+      TestFetching.withStubDataStore(Map(FRANCE -> "jeudi", GERMANY -> "Montag"))
+
+    val loading: Loading[Locale, DayOfWeek] = fetching.thenParsingWithKey { (locale, response) =>
+      DayOfWeek.of(DateTimeFormatter.ofPattern("EEEE", locale).parse(response).get(DAY_OF_WEEK))
+    }
 
     loading.fetchAndParse(FRANCE).futureValue.toOption.value shouldBe THURSDAY
     loading.fetchAndParse(GERMANY).futureValue.toOption.value shouldBe MONDAY
