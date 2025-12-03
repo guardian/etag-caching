@@ -3,7 +3,7 @@ on: workflow_dispatch
 
 jobs:
   release:
-    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@v2
+    uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@search-for-repos-github-app-can-not-access
     permissions: { contents: write, pull-requests: write }
     secrets:
       SONATYPE_TOKEN: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_TOKEN }}
