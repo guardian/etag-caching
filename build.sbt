@@ -37,7 +37,7 @@ def awsS3WithSdkVersion(version: Int)=
 
 val awsSdkForVersion = Map(
 //  1 -> "com.amazonaws" % "aws-java-sdk-s3" % "1.12.487",
-  2 -> "software.amazon.awssdk" % "s3" % "2.35.11"
+  2 -> "software.amazon.awssdk" % "s3" % "2.40.5"
 )
 
 lazy val `aws-s3-base` =
