@@ -8,10 +8,11 @@ import com.gu.etagcaching.aws.sdkv2.s3.ExampleParser.parseFruit
 import com.gu.etagcaching.aws.sdkv2.s3.S3ClientForS3Mock.createS3clientFor
 import com.gu.etagcaching.aws.sdkv2.s3.TestS3Objects.bucket
 import com.gu.etagcaching.aws.sdkv2.s3.response.Transformer.Bytes
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, OptionValues}
+import org.testcontainers.DockerClientFactory
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 
@@ -31,9 +32,20 @@ case class TestS3Objects(id: Int) {
   val example: ObjectId = ObjectId(bucket, s"$id/path")
   val nonExistent: ObjectId = ObjectId(bucket, s"$id/nothing-should-be-here")
 }
-
 class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures with OptionValues with IntegrationPatience with BeforeAndAfterAll {
 
+  require(DockerClientFactory.instance().isDockerAvailable,
+    """
+      |****
+      |
+      |This test uses S3Mock/testcontainers/Docker, and requires Docker Engine to be running on the machine -
+      |specifically, on developer laptops it requires *Docker Desktop*.
+      |
+      |See https://github.com/guardian/etag-caching/pull/137 for more details!
+      |
+      |****
+      |""".stripMargin
+  )
   val s3Mock: S3MockContainer = new S3MockContainer("latest").withInitialBuckets(TestS3Objects.bucket)
   override def beforeAll(): Unit = s3Mock.start()
   override def afterAll(): Unit = s3Mock.stop()
