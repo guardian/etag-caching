@@ -31,8 +31,6 @@ object DemoCache {
 
 case class DemoCache(policy: FreshnessPolicy) extends ScalaFutures {
   
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   private val logStore: ConcurrentLinkedQueue[String] = new ConcurrentLinkedQueue[String]()
 
   def logs: String = logStore.asScala.mkString("\n")
@@ -47,11 +45,11 @@ case class DemoCache(policy: FreshnessPolicy) extends ScalaFutures {
     }
 
     Scaffeine().buildAsyncFuture[String, Int](
-      loader = key => Future {
+      loader = key => Future.successful {
         simulateWork("load", key, 15)
         0
       },
-      reloadLoader = Some { case (key, oldValue) => Future {
+      reloadLoader = Some { case (key, oldValue) => Future.successful {
         simulateWork("reload", key, 10)
         oldValue + 1
       }
