@@ -47,7 +47,14 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
       |""".stripMargin
   )
   val s3Mock: S3MockContainer = new S3MockContainer("latest").withInitialBuckets(TestS3Objects.bucket)
-  override def beforeAll(): Unit = s3Mock.start()
+  override def beforeAll(): Unit = {
+    s3Mock.start()
+
+    // Explicitly create bucket and WAIT for it
+    s3Client.createBucket { b =>
+      b.bucket(TestS3Objects.bucket)
+    }.join()
+  }
   override def afterAll(): Unit = s3Mock.stop()
   lazy val s3Client: S3AsyncClient = createS3clientFor(s3Mock) // lazy val because we need the s3Mock to start first
 
