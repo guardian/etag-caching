@@ -16,7 +16,7 @@ object S3ClientForS3Mock {
     .credentialsProvider(
       StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
     .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
-    .endpointOverride(URI.create(s3Mock.getHttpsEndpoint))
+    .endpointOverride(URI.create(s3Mock.getHttpEndpoint))
     .httpClient(
       NettyNioAsyncHttpClient.builder()
         .buildWithDefaults(
