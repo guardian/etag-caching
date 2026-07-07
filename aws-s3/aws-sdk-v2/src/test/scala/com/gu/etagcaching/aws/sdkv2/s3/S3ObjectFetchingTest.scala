@@ -13,10 +13,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.testcontainers.DockerClientFactory
+import software.amazon.awssdk.core.async.AsyncRequestBody
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 
-import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.GZIPInputStream
 import scala.compat.java8.FutureConverters._
@@ -99,11 +99,11 @@ class S3ObjectFetchingTest extends AnyFlatSpec with Matchers with ScalaFutures w
   }
 
   private def uploadFile(demoFile: String)(implicit testS3Objects: TestS3Objects): Unit = {
-    val path = new File(getClass.getClassLoader.getResource("demo-files/" + demoFile).getFile).toPath
+    val bytes = getClass.getClassLoader.getResourceAsStream("demo-files/" + demoFile).readAllBytes()
 
     val s3response = s3Client.putObject(
       PutObjectRequest.builder().bucket(testS3Objects.example.bucket).key(testS3Objects.example.key).build(),
-      path
+      AsyncRequestBody.fromBytes(bytes)
     ).toScala.futureValue
 
     assert(s3response.sdkHttpResponse.isSuccessful)
