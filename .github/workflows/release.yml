@@ -4,6 +4,8 @@ on: workflow_dispatch
 jobs:
   release:
     uses: guardian/gha-scala-library-release-workflow/.github/workflows/reusable-release.yml@support-waiting-on-github-status-checks
+    with:
+      CI_WORKFLOW_NAME: "CI"
     permissions: { contents: write, pull-requests: write }
     secrets:
       SONATYPE_TOKEN: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_TOKEN }}
